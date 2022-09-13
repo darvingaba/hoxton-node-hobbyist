@@ -10,13 +10,14 @@ app.use(express.json())
 const port = 3344
 
 app.get('/users',async(req,res)=>{
-    const users = await prisma.user.findMany({ include: {Hobbies:true}})
+    const users = await prisma.user.findMany({include:{Hobbies:true}})
     res.send(users)
 })
 
 app.get('/users/:id', async(req,res)=>{
-    const user = await prisma.user.findUnique({where:{id:Number(req.params.id)},
-    include : {Hobbies:true}
+    const id = Number(req.params.id)
+    const user = await prisma.user.findUnique({where:{id},
+      include:{Hobbies:true}
    })
     if(user){
         res.send(user)
@@ -27,31 +28,41 @@ app.get('/users/:id', async(req,res)=>{
 })
 
 app.post('/users', async(req,res)=>{
-    const newUser = await prisma.user.create({data: req.body,include:{Hobbies:true}})
+    const newUser = await prisma.user.create({
+      data: {
+        email: req.body.email,
+        Hobbies: {
+          connectOrCreate: req.body.Hobbies.map((hobby: any) => ({
+            where:  {name: hobby },
+            create: {name: hobby },
+          })),
+        },
+      },
+    });
     res.send(newUser)
 })
 
-app.delete('/users/:id',async(req,res)=>{
-    const id = Number(req.params.id)
-    const deleteUser = await prisma.user.delete({where:{ id }})
-    res.send(deleteUser) 
-})
+// app.delete('/users/:id',async(req,res)=>{
+//     const id = Number(req.params.id)
+//     const deleteUser = await prisma.user.delete({where:{ id }})
+//     res.send(deleteUser) 
+// })
 
-app.patch('/users/:id', async(req,res)=>{
-  const id = Number(req.params.id)
-  const updated = await prisma.user.update({where:{id} ,data:req.body})
-  res.send(updated)
-})
+// app.patch('/users/:id', async(req,res)=>{
+//   const id = Number(req.params.id)
+//   const updated = await prisma.user.update({where:{id} ,data:req.body})
+//   res.send(updated)
+// })
 
 app.get('/hobbies',async(req,res)=>{
-    const hobbies = await prisma.hobbies.findMany({ include: {user:true}})
+    const hobbies = await prisma.hobbies.findMany({include:{user:true}})
     res.send(hobbies)
 })
 
 app.get("/hobbies/:id", async (req, res) => {
   const hobby = await prisma.hobbies.findUnique({
     where: { id: Number(req.params.id) },
-    include: { user: true },
+    include:{user:true}
   });
   if (hobby) {
     res.send(hobby);
@@ -61,20 +72,29 @@ app.get("/hobbies/:id", async (req, res) => {
 });
 
 app.post("/hobbies", async (req, res) => {
-  const newHobby = await prisma.hobbies.create({ data:req.body,include :{user:true}});
+  const newHobby = await prisma.hobbies.create({ 
+    data:{
+      name:req.body.name,
+      user:{
+        connectOrCreate:req.body.user.map((userr:any)=>({
+          where:{fullName: userr,active:true},
+          create:{fullName:userr,active:true}
+        }))
+      }
+    }});
   res.send(newHobby);
 });
 
-app.delete("/hobbies/:id", async (req, res) => {
-  const id = Number(req.params.id);
-  const deleteHobby = await prisma.hobbies.delete({ where: { id } });
-  res.send(deleteHobby);
-});
-app.patch("/hobbies/:id", async (req, res) => {
-  const id = Number(req.params.id);
-  const updated = await prisma.hobbies.update({ where: { id }, data: req.body });
-  res.send(updated);
-});
+// app.delete("/hobbies/:id", async (req, res) => {
+//   const id = Number(req.params.id);
+//   const deleteHobby = await prisma.hobbies.delete({ where: { id } });
+//   res.send(deleteHobby);
+// });
+// app.patch("/hobbies/:id", async (req, res) => {
+//   const id = Number(req.params.id);
+//   const updated = await prisma.hobbies.update({ where: { id }, data: req.body });
+//   res.send(updated);
+// });
 
 
 app.listen(port,()=>{
