@@ -7,7 +7,7 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
-const port = 3344
+const port = process.env.PORT || 3344
 
 app.get('/users',async(req,res)=>{
     const users = await prisma.user.findMany({include:{Hobbies:true}})
